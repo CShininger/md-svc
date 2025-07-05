@@ -5,7 +5,9 @@ import compression from "compression";
 import dotenv from "dotenv";
 
 import { connectDatabase } from "./config/database";
+import { initDatabase, testConnection } from "./config/database";
 import markdownRoutes from "./routes/markdownRoutes";
+import authRoutes from "./routes/auth";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
 // 加载环境变量
@@ -61,6 +63,7 @@ app.get("/health", (req, res) => {
 
 // API路由
 app.use(`${API_PREFIX}/markdowns`, markdownRoutes);
+app.use(`${API_PREFIX}/auth`, authRoutes);
 
 // 根路由
 app.get("/", (req, res) => {
@@ -73,7 +76,8 @@ app.get("/", (req, res) => {
       description: "用于处理Markdown文件上传和获取的后端API服务",
       endpoints: {
         health: "/health",
-        api: `${API_PREFIX}/markdowns`,
+        markdowns: `${API_PREFIX}/markdowns`,
+        auth: `${API_PREFIX}/auth`,
         docs: "/docs", // 未来可添加API文档
       },
     },
@@ -89,8 +93,12 @@ app.use(errorHandler);
 // 启动服务器
 const startServer = async (): Promise<void> => {
   try {
-    // 连接数据库
+    // 连接MongoDB数据库
     await connectDatabase();
+
+    // 连接和初始化MySQL数据库
+    await testConnection();
+    await initDatabase();
 
     // 启动服务器
     app.listen(PORT, () => {
@@ -101,6 +109,7 @@ const startServer = async (): Promise<void> => {
       console.log(
         `📝 Markdown API: http://localhost:${PORT}${API_PREFIX}/markdowns`
       );
+      console.log(`🔐 认证 API: http://localhost:${PORT}${API_PREFIX}/auth`);
       console.log(`🌍 环境: ${process.env.NODE_ENV || "development"}`);
       console.log("💡 按 Ctrl+C 停止服务器");
     });
