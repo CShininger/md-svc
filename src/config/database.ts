@@ -72,11 +72,11 @@ export const disconnectDatabase = async (): Promise<void> => {
 export default databaseConfig;
 
 const dbConfig = {
-  host: process.env.DB_HOST || "localhost",
-  port: parseInt(process.env.DB_PORT || "3306"),
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "root",
-  database: process.env.DB_NAME || "next_user",
+  host: process.env.MYSQL_HOST || "localhost",
+  port: parseInt(process.env.MYSQL_PORT || "3306"),
+  user: process.env.MYSQL_USER || "root",
+  password: process.env.MYSQL_PASSWORD || "root",
+  database: process.env.MYSQL_DB || "next_user",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
