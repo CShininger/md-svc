@@ -1,0 +1,46 @@
+name: Manual Tag and Docker Build/Push
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Tag name (e.g., v1.0.0)"
+        required: true
+      tag_message:
+        description: "Optional tag message"
+        required: false
+
+jobs:
+  tag-and-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push Git tag
+        env:
+          TAG_NAME: ${{ github.event.inputs.tag_name }}
+          TAG_MESSAGE: ${{ github.event.inputs.tag_message || 'Auto tag' }}
+        run: |
+          git tag -a "$TAG_NAME" -m "$TAG_MESSAGE"
+          git push origin "$TAG_NAME"
+
+      - name: Log in to Docker registry
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login crpi-ooityr3jufudcukm.cn-shanghai.personal.cr.aliyuncs.com -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build Docker image
+        run: |
+          docker build -t crpi-ooityr3jufudcukm.cn-shanghai.personal.cr.aliyuncs.com/swanqing_blog/md-svc:${{ github.event.inputs.tag_name }} .
+
+      - name: Push Docker image
+        run: |
+          docker push crpi-ooityr3jufudcukm.cn-shanghai.personal.cr.aliyuncs.com/swanqing_blog/md-svc:${{ github.event.inputs.tag_name }}

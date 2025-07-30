@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  # MongoDB 数据库服务
+  mongodb:
+    image: mongo:latest
+    container_name: md-svc-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+      MONGO_INITDB_DATABASE: markdown_db
+    volumes:
+      # 挂载到现有的数据目录
+      - "D:/docker volumns/mongo:/data/db"
+      # 配置文件目录
+      - mongodb_config:/data/configdb
+      # 初始化脚本
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    ports:
+      - "27017:27017"
+    networks:
+      - md-svc-network
+
+  # Markdown 服务应用
+  md-svc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: md-svc-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      API_PREFIX: /api/v1
+      # 连接到compose中的MongoDB服务
+      MONGODB_URI: mongodb://root:root@mongodb:27017/markdown_db?authSource=admin
+      CORS_ORIGIN: http://localhost:3000
+      UPLOAD_MAX_SIZE: 10mb
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongodb
+    networks:
+      - md-svc-network
+    volumes:
+      # 挂载上传文件目录
+      - ./uploads:/app/uploads
+      # 挂载日志目录
+      - ./logs:/app/logs
+      # 挂载配置文件
+      - ./.env:/app/.env:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  mongodb_config:
+    driver: local
+
+networks:
+  md-svc-network:
+    driver: bridge
+
+
